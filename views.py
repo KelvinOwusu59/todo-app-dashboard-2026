@@ -39,44 +39,83 @@ def invitation():
 
     if request.method == 'POST':
         email = request.form['email']
+        log_visit(page='waitlist_signup', user_id=current_user.id if current_user.is_authenticated else None)
         # Here you would send a verification email and add to waitlist
         print(f"Sending invitation to {email}")
+    else:
+        log_visit(page='invitation', user_id=current_user.id if current_user.is_authenticated else None)
     return render_template('invitation.html')
 
 
 @main_blueprint.route('/todo', methods=['GET', 'POST'])
 @login_required
 def todo():
+    log_visit(page='todo', user_id=current_user.id if current_user.is_authenticated else None)
     return render_template('todo.html')
 
 
 @main_blueprint.route('/dashboard', methods=['GET', 'POST'])
 # @login_required
 def dashboard():
-    visits = Visit.query.all()
+    today = datetime.date.today()
+    week_ago = today - datetime.timedelta(days=6)
+    last_week_start = today - datetime.timedelta(days=13)
+    last_week_end = today - datetime.timedelta(days=7)
 
-    chart_week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    # Visits
+    visits = Visit.query.order_by(Visit.timestamp.desc()).all()
+    for v in visits:
+        v.date = v.timestamp.strftime('%Y-%m-%d') if v.timestamp else ''
+    visits_today = Visit.query.filter(db.func.date(Visit.timestamp) == today).count()
+    total_users = User.query.count()
+    tasks = Task.query.all()
+    users = User.query.all()
+    waitlist = Waitlist.query.filter(Waitlist.timestamp >= week_ago).all()
 
-    week_notes = [random.randint(0, 15) for _ in range(7)]
-    two_week_notes = [random.randint(0, 15) for _ in range(7)]
+    # New users this week
+    new_users = 0  # No date_created, so set to 0 or remove metric
+
+    # Visits per day for index page (this week and last week)
+    week_visits = []
+    two_week_visits = []
+    chart_week = [(today - datetime.timedelta(days=i)).strftime('%a') for i in range(6, -1, -1)]
+    for i in range(6, -1, -1):
+        day = today - datetime.timedelta(days=i)
+        week_visits.append(Visit.query.filter(db.func.date(Visit.timestamp) == day, Visit.page == 'index').count())
+        two_week_visits.append(Visit.query.filter(db.func.date(Visit.timestamp) == (day - datetime.timedelta(days=7)), Visit.page == 'index').count())
+
+    # Bar chart: visits today for each page
+    page_names = ['index', 'login-g', 'callback', 'user-name', 'license', 'waitlist', 'state-not-found', 'State-mismatch']
+    page_visits = [Visit.query.filter(db.func.date(Visit.timestamp) == today, Visit.page == page).count() for page in page_names]
+
+    # Productivity change
+    week_total = sum(week_visits)
+    two_week_total = sum(two_week_visits)
+    productivity_change = ((week_total - two_week_total) / two_week_total * 100) if two_week_total else 0
 
     return render_template('admin.html',
                            date=datetime.datetime.now().strftime("%B %d, %Y"),
-                           total_users=716,     # add real number
-                           new_users=5,         # add real number
-                           visits_today=120,    # add real number
-                           productivity_change=0.6,   # add real number
-                           visits=visits,           # add real value
-                           chart_week=chart_week,   # update list to show today as the last day in the chart
-                           week_notes=week_notes,   # add real values
-                           two_week_notes=two_week_notes  # add real values
+                           total_users=total_users,
+                           new_users=new_users,
+                           visits_today=visits_today,
+                           productivity_change=productivity_change,
+                           visits=visits,
+                           chart_week=chart_week,
+                           week_notes=week_visits,
+                           two_week_notes=two_week_visits,
+                           week_visits=week_visits,
+                           two_week_visits=two_week_visits,
+                           users=users,
+                           tasks=tasks,
+                           waitlist=waitlist,
+                           page_visits=page_visits
                            )
-
 
 
 @main_blueprint.route('/api/v1/tasks', methods=['GET'])
 @login_required
 def api_get_tasks():
+    log_visit(page='api_get_tasks', user_id=current_user.id if current_user.is_authenticated else None)
     tasks = Task.query.filter_by(user_id=current_user.id).all()
     return {
         "tasks": [task.to_dict() for task in tasks]
@@ -86,6 +125,7 @@ def api_get_tasks():
 @main_blueprint.route('/api/v1/tasks', methods=['POST'])
 @login_required
 def api_create_task():
+    log_visit(page='create_task', user_id=current_user.id if current_user.is_authenticated else None)
     data = request.get_json()
     new_task = Task(title=data['title'], user_id=current_user.id)
     db.session.add(new_task)
@@ -98,6 +138,7 @@ def api_create_task():
 @main_blueprint.route('/api/v1/tasks/<int:task_id>', methods=['PATCH'])
 @login_required
 def api_toggle_task(task_id):
+    log_visit(page='toggle_task', user_id=current_user.id if current_user.is_authenticated else None)
     task = Task.query.get(task_id)
 
     if task is None:
@@ -112,6 +153,7 @@ def api_toggle_task(task_id):
 @main_blueprint.route('/remove/<int:task_id>')
 @login_required
 def remove(task_id):
+    log_visit(page='delete_task', user_id=current_user.id if current_user.is_authenticated else None)
     task = Task.query.get(task_id)
 
     if task is None:

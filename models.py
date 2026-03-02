@@ -19,6 +19,14 @@ class User(db.Model, UserMixin):
         """Check hashed password."""
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def name(self):
+        return self.email.split('@')[0] if self.email else ""
+
+    @property
+    def notes(self):
+        return self.tasks
+
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)

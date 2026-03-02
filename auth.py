@@ -35,16 +35,19 @@ def signup():
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('main.todo'))
-        
-    return render_template('login.html')
+        else:
+            from views import log_visit
+            log_visit(page='login_error', user_id=user.id if user else None)
+            error = 'Incorrect email or password.'
+    return render_template('login.html', error=error)
 
 @auth_blueprint.route('/logout')
 @login_required

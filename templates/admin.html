@@ -437,7 +437,6 @@
                   <div class="d-flex flex-column">
                     <h6 class="mb-3 text-sm">{{ user.name }}</h6>
                     <span class="mb-2 text-xs">Email Address: <span class="text-dark ms-sm-2 font-weight-bold"> {{ user.email }}</span></span>
-                    <span class="text-xs">Joined on: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.date_created }}</span></span>
                     <span class="text-xs">Total tasks: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.notes|length }}</span></span>
                   </div>
                   <div class="ms-auto text-end">
@@ -593,7 +592,7 @@
           backgroundColor: "#2d89ce",
           borderWidth: 4,
           fill: false,
-          data: {{ page_visits }},
+          data: {{ page_visits | tojson }},
           maxBarThickness: 26
         },
         // {
@@ -694,7 +693,7 @@
         backgroundColor: "#2d89ce",
         borderWidth: 4,
         fill: false,
-        data: {{ week_notes }},
+        data: {{ week_notes | tojson }},
         maxBarThickness: 6
       },{
         label: "last week",
@@ -705,7 +704,7 @@
         backgroundColor: "#2dcbce",
         borderWidth: 2,
         fill: false,
-        data: {{ two_week_notes }},
+        data: {{ two_week_notes | tojson }},
         maxBarThickness: 6
       }],
     },
@@ -789,7 +788,7 @@
         backgroundColor: "#ce482d",
         borderWidth: 4,
         fill: false,
-        data: {{ week_visits }},
+        data: {{ week_visits | tojson }},
         maxBarThickness: 6
       },{
         label: "last week",
@@ -800,7 +799,7 @@
         backgroundColor: "#ce6b2d",
         borderWidth: 2,
         fill: false,
-        data: {{ two_week_visits }},
+        data: {{ two_week_visits | tojson }},
         maxBarThickness: 6
       }],
     },
